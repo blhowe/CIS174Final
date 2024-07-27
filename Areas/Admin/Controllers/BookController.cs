@@ -1,23 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using CIS174Final.Models;
 
 namespace CIS174Final.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize]
     public class BookController : Controller
     {
-        private BookContext context { get; set; }
+        private BookContext _context { get; set; }
 
-        public BookController(BookContext ctx) => context = ctx;
-
-        private bool IsAdmin()
+        public BookController(BookContext ctx)
         {
-            return HttpContext.Session.GetString("IsAdmin") == "true";
-        }
-
-        private IActionResult RedirectToLogin()
-        {
-            return RedirectToAction("Login, "Home", new{area = ""});
+            _context = ctx;
         }
 
         [HttpGet]
@@ -31,7 +26,7 @@ namespace CIS174Final.Areas.Admin.Controllers
         public IActionResult Edit(int id)
         {
             ViewBag.Action = "Edit";
-            var book = context.Books.Find(id);
+            var book = _context.Books.Find(id);
             return View(book);
         }
 
@@ -41,10 +36,14 @@ namespace CIS174Final.Areas.Admin.Controllers
             if (ModelState.IsValid)
             {
                 if (book.BookId == 0)
-                    context.Books.Add(book);
+                {
+                    _context.Books.Add(book);
+                }
                 else
-                    context.Books.Update(book);
-                context.SaveChanges();
+                {
+                    _context.Books.Update(book);
+                }
+                _context.SaveChanges();
                 return RedirectToAction("Index", "Home");
             }
             else
@@ -57,15 +56,15 @@ namespace CIS174Final.Areas.Admin.Controllers
         [HttpGet]
         public IActionResult Delete(int id)
         {
-            var book = context.Books.Find(id);
+            var book = _context.Books.Find(id);
             return View(book);
         }
 
         [HttpPost]
         public IActionResult Delete(Book book)
         {
-            context.Books.Remove(book);
-            context.SaveChanges();
+            _context.Books.Remove(book);
+            _context.SaveChanges();
             return RedirectToAction("Index", "Home");
         }
     }
