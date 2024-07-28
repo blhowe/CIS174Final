@@ -1,44 +1,76 @@
-using CIS174Final.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
+using CIS174Final.Models;
 
 namespace CIS174Final.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    public class HomeController : Controller
+    [Authorize(Roles = "Admin")]  // Restrict access to admin role
+    public class BookController : Controller
     {
         private BookContext context { get; set; }
 
-        public HomeController(BookContext ctx)
+        public BookController(BookContext ctx)
         {
             context = ctx;
         }
 
-        private bool IsAdmin()
+        [HttpGet]
+        public IActionResult Add()
         {
-            return HttpContext.Session.GetString("IsAdmin") == "true";
+            ViewBag.Action = "Add";
+            return View("Edit", new Book());
         }
 
-        private IActionResult RedirectToLogin()
+        [HttpGet]
+        public IActionResult Edit(int id)
         {
-            return RedirectToAction("Login", "Home", new { area = "" });
+            var book = context.Books.Find(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            ViewBag.Action = "Edit";
+            return View(book);
         }
 
-        public IActionResult Index()
+        [HttpPost]
+        public IActionResult Edit(Book book)
         {
-            if (!IsAdmin()) return RedirectToLogin();
-
-            var books = context.Books.ToList();
-            return View(books);
+            if (ModelState.IsValid)
+            {
+                if (book.BookId == 0)
+                {
+                    context.Books.Add(book);
+                }
+                else
+                {
+                    context.Books.Update(book);
+                }
+                context.SaveChanges();
+                return RedirectToAction("Index", "Home");
+            }
+            ViewBag.Action = (book.BookId == 0) ? "Add" : "Edit";
+            return View(book);
         }
 
-        public IActionResult Books()
+        [HttpGet]
+        public IActionResult Delete(int id)
         {
-            if (!IsAdmin()) return RedirectToLogin();
-            
-            var books = context.Books.ToList();
-            return View(books);
+            var book = context.Books.Find(id);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            return View(book);
+        }
+
+        [HttpPost]
+        public IActionResult Delete(Book book)
+        {
+            context.Books.Remove(book);
+            context.SaveChanges();
+            return RedirectToAction("Index", "Home");
         }
     }
 }
